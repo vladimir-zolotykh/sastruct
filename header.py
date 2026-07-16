@@ -55,7 +55,7 @@ class StructMeta(type):
                 ns2[name] = f
             elif isinstance(val, type):
                 f = FieldType(name, off, val)
-                off += val.vsize
+                off += val._view_size
                 fields.append(name)
                 ns2[name] = f
         ns2["_view_size"] = off
@@ -77,12 +77,21 @@ class View(metaclass=StructMeta):
         return f"{type(self).__name__}({self.as_csv()})"
 
 
+class Point(View):
+    x = "<d"
+    y = "<d"
+
+
+class Bbox(View):
+    p1 = Point
+    p2 = Point
+
+
 class Header(View):
     magic = "<i"
-    x1 = "<d"
-    y1 = "<d"
-    x2 = "<d"
-    y2 = "<d"
+    bb = Bbox
+    # xy1 = Point
+    # xy2 = Point
     cnt = "<i"
 
 
