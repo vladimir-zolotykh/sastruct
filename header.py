@@ -46,24 +46,22 @@ class StructMeta(type):
         off: int = 0
         fields: list[str] = []
         for name, val in ns.items():
-            if name[:2] == "__" and name[-2:] == "__":
+            if (name[:2] == "__" and name[-2:] == "__") or ns.get("_exclude", False):
                 continue
             if isinstance(val, str):
-                f = FieldFmt(name, off, val)
+                ns2[name] = FieldFmt(name, off, val)
                 off += struct.calcsize(val)
-                fields.append(name)
-                ns2[name] = f
             elif isinstance(val, type):
-                f = FieldType(name, off, val)
+                ns2[name] = FieldType(name, off, val)
                 off += val._view_size
-                fields.append(name)
-                ns2[name] = f
+            fields.append(name)
         ns2["_view_size"] = off
         ns2["_fields"] = fields
         return super().__new__(mcls, clsname, bases, ns2)
 
 
 class View(metaclass=StructMeta):
+    _exclude = True  # do not inject fields for this class
     _view_size: ClassVar[int]
     _fields: list[str]
 
