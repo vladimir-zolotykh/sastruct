@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # PYTHON_ARGCOMPLETE_OK
-from typing import ClassVar, BinaryIO, Self
+from __future__ import annotations
+from typing import BinaryIO, Self, TYPE_CHECKING, Iterator
 from functools import singledispatchmethod
 import argparse
 import argcomplete
@@ -44,6 +45,8 @@ class FieldType(Field):
 
 
 class StructMeta(type):
+    _view_size: int
+
     def __new__(mcls, clsname, bases, ns):
         ns2 = dict(ns)
         off: int = 0
@@ -54,7 +57,7 @@ class StructMeta(type):
             if isinstance(val, str):
                 ns2[name] = FieldFmt(name, off, val)
                 off += struct.calcsize(val)
-            elif isinstance(val, type):
+            elif isinstance(val, StructMeta):
                 ns2[name] = FieldType(name, off, val)
                 off += val._view_size
             fields.append(name)
@@ -65,7 +68,7 @@ class StructMeta(type):
 
 class View(metaclass=StructMeta):
     _exclude = True  # do not inject fields for this class
-    _view_size: ClassVar[int]
+    _view_size: int
     _fields: list[str]
 
     def __init__(self, bytesdata: bytes | memoryview):
@@ -91,7 +94,10 @@ class Bbox(View):
 class Header(View):
     magic = "<i"
     bb = Bbox
-    cnt = "<i"
+    if TYPE_CHECKING:
+        cnt: int
+    else:
+        cnt = "<i"
 
 
 class Polygon(View):
@@ -106,13 +112,13 @@ class Polygon(View):
         raise NotImplementedError(f"Cannot iterate as {kind}")
 
     @iter_as.register
-    def _(self, fmt: str) -> tuple[float, float]:
+    def _(self, fmt: str) -> Iterator[tuple[float, float]]:
         for off in range(0, len(self.view), struct.calcsize(fmt)):
             sl = slice(off, off + struct.calcsize(fmt))
             yield struct.unpack_from(fmt, self.view[sl])
 
     @iter_as.register
-    def _(self, factory: StructMeta) -> StructMeta:
+    def _(self, factory: StructMeta) -> Iterator[StructMeta]:
         for off in range(0, len(self.view), factory._view_size):
             sl = slice(off, off + factory._view_size)
             yield factory(self.view[sl])
@@ -122,7 +128,7 @@ parser = argparse.ArgumentParser(
     description="Iterate polygons as",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
-parser.add_argument("--iter-as", choices=["<dd", "Point"], help="Choose iter-as kind")
+parser.add_argument("--iter-as", choices=["dd", "Point"], help="Choose iter-as kind")
 if __name__ == "__main__":
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
