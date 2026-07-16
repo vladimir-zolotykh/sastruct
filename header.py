@@ -3,6 +3,8 @@
 # PYTHON_ARGCOMPLETE_OK
 from typing import ClassVar, BinaryIO, Self
 from functools import singledispatchmethod
+import argparse
+import argcomplete
 import struct
 
 
@@ -116,13 +118,23 @@ class Polygon(View):
             yield factory(self.view[sl])
 
 
+parser = argparse.ArgumentParser(
+    description="Iterate polygons as",
+    #    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+)
+parser.add_argument("--iter-as", choices=["<dd", "point"], help="Choose iter-as kind")
 if __name__ == "__main__":
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args()
+
     with open("polygons.dat", "rb") as f:
         h = Header(f.read(Header._view_size))
         print(h)
         for _ in range(h.cnt):
             polygon = Polygon.from_file(f)
-            # for x in polygon.iter_as("<dd"):
-            #     print(x)
-            for x in polygon.iter_as(Point):
-                print(x)
+            if args.iter_as == "<dd":
+                for x in polygon.iter_as("<dd"):
+                    print(x)
+            else:
+                for x in polygon.iter_as(Point):
+                    print(x)
