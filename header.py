@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # PYTHON_ARGCOMPLETE_OK
-from typing import ClassVar
+from typing import ClassVar, BinaryIO, Self
+from functools import singledispatchmethod
 import struct
 
 
@@ -91,11 +92,37 @@ class Header(View):
     cnt = "<i"
 
 
-class Sized(View):
-    pass
+class Polygon(View):
+    @classmethod
+    def from_file(cls, f: BinaryIO) -> Self:
+        _INT = struct.Struct("<i")
+        (sz,) = struct.unpack(_INT.format, f.read(_INT.size))
+        return cls(f.read(sz - _INT.size))
+
+    @singledispatchmethod
+    def iter_as(self, kind):
+        raise NotImplementedError(f"Cannot iterate as {kind}")
+
+    @iter_as.register
+    def _(self, fmt: str) -> tuple[float, float]:
+        for off in range(0, len(self.view), struct.calcsize(fmt)):
+            sl = slice(off, off + struct.calcsize(fmt))
+            yield struct.unpack_from(fmt, self.view[sl])
+
+    @iter_as.register
+    def _(self, factory: StructMeta) -> StructMeta:
+        for off in range(0, len(self.view), factory._view_size):
+            sl = slice(off, off + factory._view_size)
+            yield factory(self.view[sl])
 
 
 if __name__ == "__main__":
     with open("polygons.dat", "rb") as f:
         h = Header(f.read(Header._view_size))
         print(h)
+        for _ in range(h.cnt):
+            sized = Polygon()
+            for x in sized.iter("<dd"):
+                print(x)
+            for x in sized.iter(Point):
+                print(x)
