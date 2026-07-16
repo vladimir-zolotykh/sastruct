@@ -120,7 +120,7 @@ class Polygon(View):
 
 parser = argparse.ArgumentParser(
     description="Iterate polygons as",
-    #    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 parser.add_argument("--iter-as", choices=["<dd", "Point"], help="Choose iter-as kind")
 if __name__ == "__main__":
@@ -132,9 +132,8 @@ if __name__ == "__main__":
         print(h)
         for _ in range(h.cnt):
             polygon = Polygon.from_file(f)
-            if args.iter_as == "<dd":
-                for x in polygon.iter_as(args.iter_as):
-                    print(x)
-            else:
-                for x in polygon.iter_as(globals()[args.iter_as]):
-                    print(x)
+            kind = (
+                globals()[args.iter_as] if args.iter_as in globals() else args.iter_as
+            )
+            for x in polygon.iter_as(kind):
+                print(x)
