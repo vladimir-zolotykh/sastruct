@@ -121,8 +121,8 @@ if __name__ == "__main__":
         h = Header(f.read(Header._view_size))
         print(h)
         for _ in range(h.cnt):
-            sized = Polygon()
-            for x in sized.iter("<dd"):
-                print(x)
-            for x in sized.iter(Point):
+            polygon = Polygon.from_file(f)
+            # for x in polygon.iter_as("<dd"):
+            #     print(x)
+            for x in polygon.iter_as(Point):
                 print(x)
