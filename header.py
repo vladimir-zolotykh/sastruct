@@ -90,8 +90,6 @@ class Bbox(View):
 class Header(View):
     magic = "<i"
     bb = Bbox
-    # xy1 = Point
-    # xy2 = Point
     cnt = "<i"
 
 
