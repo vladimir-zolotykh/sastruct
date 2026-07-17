@@ -24,18 +24,13 @@ class lazycall:
             return val
 
 
-def fib(n):
-    print(f"Calculating fib({n})")
-    return (fib(n - 2) + fib(n - 1)) if n >= 2 else n
-
-
 class Fib:
     @lazycall
     def fib(self, n):
-        return fib(n)
+        return (self.fib(n - 1) + self.fib(n - 2)) if n >= 2 else n
 
 
 if __name__ == "__main__":
     f = Fib()
-    for n in range(3):
+    for n in range(5):
         print(f.fib(n))
