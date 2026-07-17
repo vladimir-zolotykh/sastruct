@@ -3,7 +3,7 @@
 # PYTHON_ARGCOMPLETE_OK
 from __future__ import annotations
 from typing import BinaryIO, Self, TYPE_CHECKING, Iterator
-from functools import singledispatchmethod
+from functools import singledispatch, singledispatchmethod
 import argparse
 import argcomplete
 import struct
@@ -44,6 +44,25 @@ class FieldType(Field):
         return self.factory(instance.view[sl])
 
 
+@singledispatch
+def make_field(val, name, off):
+    return NotImplemented(f"Cannot make_field for {val!r}")
+
+
+@make_field.register
+def make_field(val: str, name, off) -> tuple[FieldFmt, int]:
+    fld = FieldFmt(name, off, val)
+    off = struct.calcsize(val)
+    return tuple(fld, off)
+
+
+@make_field.register
+def make_field(val: StructMeta, name, off) -> tuple[FieldType, int]:
+    fld = FieldType(name, off, val)
+    off = val._view_size
+    return tuple(fld, off)
+
+
 class StructMeta(type):
     _view_size: int
 
@@ -54,12 +73,14 @@ class StructMeta(type):
         for name, val in ns.items():
             if (name[:2] == "__" and name[-2:] == "__") or ns.get("_exclude", False):
                 continue
-            if isinstance(val, str):
-                ns2[name] = FieldFmt(name, off, val)
-                off += struct.calcsize(val)
-            elif isinstance(val, StructMeta):
-                ns2[name] = FieldType(name, off, val)
-                off += val._view_size
+            ns2[name], delta = make_field(val, name, off)
+            off += delta
+            # if isinstance(val, str):
+            #     ns2[name] = FieldFmt(name, off, val)
+            #     off += struct.calcsize(val)
+            # elif isinstance(val, StructMeta):
+            #     ns2[name] = FieldType(name, off, val)
+            #     off += val._view_size
             fields.append(name)
         ns2["_view_size"] = off
         ns2["_fields"] = fields
