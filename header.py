@@ -44,25 +44,6 @@ class FieldType(Field):
         return self.factory(instance.view[sl])
 
 
-@singledispatch
-def make_field(val, name, off):
-    return NotImplemented(f"Cannot make_field for {val!r}")
-
-
-@make_field.register
-def make_field(val: str, name, off) -> tuple[FieldFmt, int]:
-    fld = FieldFmt(name, off, val)
-    off = struct.calcsize(val)
-    return tuple(fld, off)
-
-
-@make_field.register
-def make_field(val: StructMeta, name, off) -> tuple[FieldType, int]:
-    fld = FieldType(name, off, val)
-    off = val._view_size
-    return tuple(fld, off)
-
-
 class StructMeta(type):
     _view_size: int
 
@@ -75,16 +56,29 @@ class StructMeta(type):
                 continue
             ns2[name], delta = make_field(val, name, off)
             off += delta
-            # if isinstance(val, str):
-            #     ns2[name] = FieldFmt(name, off, val)
-            #     off += struct.calcsize(val)
-            # elif isinstance(val, StructMeta):
-            #     ns2[name] = FieldType(name, off, val)
-            #     off += val._view_size
             fields.append(name)
         ns2["_view_size"] = off
         ns2["_fields"] = fields
         return super().__new__(mcls, clsname, bases, ns2)
+
+
+@singledispatch
+def make_field(val, name, off):
+    raise TypeError(f"Cannot make_field for {val!r}")
+
+
+@make_field.register
+def _(val: str, name, off) -> tuple[FieldFmt, int]:
+    fld = FieldFmt(name, off, val)
+    off = struct.calcsize(val)
+    return (fld, off)
+
+
+@make_field.register
+def _(val: StructMeta, name, off) -> tuple[FieldType, int]:
+    fld = FieldType(name, off, val)
+    off = val._view_size
+    return (fld, off)
 
 
 class View(metaclass=StructMeta):
@@ -122,6 +116,8 @@ class Header(View):
 
 
 class Polygon(View):
+    _exclude = True
+
     @classmethod
     def from_file(cls, f: BinaryIO) -> Self:
         _INT = struct.Struct("<i")
