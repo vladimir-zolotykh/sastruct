@@ -32,5 +32,4 @@ class Fib:
 
 if __name__ == "__main__":
     f = Fib()
-    for n in range(5):
-        print(f.fib(n))
+    print(f.fib(80))
