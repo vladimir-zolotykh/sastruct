@@ -153,7 +153,7 @@ if __name__ == "__main__":
     with open("polygons.dat", "rb") as f:
         h = Header(f.read(Header._view_size))
         print(h)
-        for _ in range(h.cnt):
+        for _i in range(h.cnt):
             polygon = Polygon.from_file(f)
             kind = (
                 globals()[args.iter_as] if args.iter_as in globals() else args.iter_as
