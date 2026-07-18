@@ -68,14 +68,14 @@ def make_field(val, name, off):
 
 
 @make_field.register
-def _(val: str, name, off) -> tuple[FieldFmt, int]:
+def _(val: str, name: str, off: int) -> tuple[FieldFmt, int]:
     fld = FieldFmt(name, off, val)
     off = struct.calcsize(val)
     return (fld, off)
 
 
 @make_field.register
-def _(val: StructMeta, name, off) -> tuple[FieldType, int]:
+def _(val: StructMeta, name: str, off: int) -> tuple[FieldType, int]:
     fld = FieldType(name, off, val)
     off = val._view_size
     return (fld, off)
